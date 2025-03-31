@@ -5,21 +5,21 @@ class Field:
     def __init__(self, value):
         self.value = value
 
+
     def __str__(self):
         return str(self.value)
 
 
 class Name(Field):
-     def __init__(self, name: str):
-        if not name:
-            print(ValueError("Name cannot be empty."))
-        super().__init__(name)
+    def __init__(self, value):
+        super().__init__(value)
+
 
 class Phone(Field):
-    def __init__(self, phone: str):
-        if len(phone) <= 9:
-            print(ValueError("Phone number must be at least 10 characters long"))
-        super().__init__(phone)
+    def __init__(self, value):
+        if not value.isdigit() or len(value) <= 9:
+            raise ValueError("Phone number must be at least 10 characters long or contains letters")
+        super().__init__(value)
 
 
 class Record:
@@ -29,15 +29,31 @@ class Record:
 
 
     def add_phone(self, phone: str):
-        if phone not in self.phones:
+        if phone not in [p.value for p in self.phones]:
             self.phones.append(Phone(phone))
+        #     return True
+        # return False
 
 
-    def change_phone(self, old_phone: str, new_phone: str):
-        if old_phone in self.phones:
-            index = self.phones.index(old_phone)
+    def edit_phone(self, old_phone: str, new_phone: str):
+        phones_list = [p.value for p in self.phones]
+        if old_phone in phones_list:
+            index = phones_list.index(old_phone)
             self.phones[index] = Phone(new_phone)
-        print('Please provide a valid phone number.')
+            # return True
+        # print('Please provide a valid phone number.')
+        # return False   
+
+
+    def find_phone(self, phone):
+        for p in self.phones:
+            if p.value == phone:
+                return p.value
+        return None
+
+
+    def remove_phone(self, phone):
+        self.phones = [p for p in self.phones if p.value != phone]
 
 
     def __str__(self):
@@ -45,127 +61,55 @@ class Record:
 
 
 class AddressBook(UserDict):
-        
-
-        def new_record(self, name: str):
-            if name not in self.data:
-                self.data[name] = Record(name)
-            return self.data[name]
-        
-        
-        def add_record(self, name: str, phone = ''):
-            record = self.new_record(name)
-            if len(phone) > 9:
-                record.add_phone(phone)
-                return record
-            print(ValueError("Phone number must be at least 10 characters long"))
-            return None
 
 
-        def get_records(self):
-            for name, record in book.data.items():
-                yield record
+        def add_record(self, record):
+            self.data[record.name.value] = record
 
 
-        def change_record(self, name: str, phone: str):
+        # def get_records(self):
+        #     for name, record in book.data.items(): #already in results(line 114-116)
+        #         yield record
+
+
+        def find(self, name):
+            return self.data.get(name)
+
+
+        def delete(self, name):
             if name in self.data:
-                record = self.data[name]
-                record.add_phone(phone)
+                del self.data[name]
 
 
-        def __str__(self):
-            return "\n".join(str(record) for record in self.data.values())
-        
-
-        def get_contact(self, name: str):
-            if name in self.data:
-                print(self.data[name])
-            else:
-                print(KeyError(f"Contact {name} not found."))
-
-
-
-
-
-
-
-
+# Створення нової адресної книги
 book = AddressBook()
 
+# Створення запису для John
+john_record = Record("John")
+john_record.add_phone("1234567890")
+john_record.add_phone("5555555555")
 
-def input_error(func):
-    def inner(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except ValueError:
-            return "Give me name and phone please."
-        except KeyError:
-            return "Contact not found." 
-        except IndexError:
-            return "Enter user name."
-    return inner
+# Додавання запису John до адресної книги
+book.add_record(john_record)
 
+# Створення та додавання нового запису для Jane
+jane_record = Record("Jane")
+jane_record.add_phone("9876543210")
+book.add_record(jane_record)
 
-def parse_input(user_input):
-    cmd, *args = user_input.split()
-    cmd = cmd.strip().lower()
-    return cmd, *args
+# Виведення всіх записів у книзі
+for name, record in book.data.items():
+    print(record)
 
+# Знаходження та редагування телефону для John
+john = book.find("John")
+john.edit_phone("1234567890", "1112223333")
 
-@input_error
-def add_contact(args):
-    name, phone = args
-    if phone not in book.data:
-        if book.add_record(name, phone) is not None:
-            return "Contact added."
+print(john)  # Виведення: Contact name: John, phones: 1112223333; 5555555555
 
+# Пошук конкретного телефону у записі John
+found_phone = john.find_phone("5555555555")
+print(f"{john.name}: {found_phone}")  # Виведення: 5555555555
 
-@input_error
-def change_contact(args):
-    name, old_phone, new_phone = args
-    if   name in book.data:
-        book.change_record(name, phone)
-        return "Contact updated."
-    return "Contact not found."
-
-
-@input_error
-def show_phone(args):
-    name = args[0]
-    book.get_contact(name)
-    return "Contact not found."
-
-
-@input_error
-def show_all():
-    if book.data:
-        book.get_records()
-    else:
-        return "No contacts found."
-
-
-def main():
-    print("Welcome to the assistant bot!")
-    while True:
-        user_input = input("Enter a command: ")
-        command, *args = parse_input(user_input)
-
-        if command in ("close", "exit"):
-            print("Good bye!")
-            break
-        elif command == "hello":
-            print("How can I help you?")
-        elif command == "add":
-            print(add_contact(args))
-        elif command == "change":
-            print(change_contact(args))
-        elif command == "phone":
-            print(show_phone(args))
-        elif command == "all":
-            print(show_all())
-        else:
-            print("Invalid command.")
-
-
-if __name__ == "__main__":
-    main()
+# Видалення запису Jane
+book.delete("Jane")
